@@ -38,3 +38,22 @@ import splunk.appserver.mrsparkle.controllers as controllers
 from splunk.appserver.mrsparkle.lib.decorators import expose_page
 from splunk.appserver.mrsparkle.lib.routes import route
 from splunk.appserver.mrsparkle.lib import jsonresponse, util, cached
+
+
+def setup_logger(level):
+    logger = logging.getLogger('config_modeler')
+    logger.propagate = False # Prevent the log messages from being duplicated in the python.log file
+    logger.setLevel(level)
+
+    file_handler = logging.handlers.RotatingFileHandler(os.path.join(os.environ.get("SPLUNK_HOME"), 'var', 'log', 'splunk', 'config_modeler.log'), maxBytes=25000000, backupCount=5)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+
+    return logger
+
+logger = setup_logger(logging.INFO)
+
+class TerminalController(controllers.BaseController):
+  pass
