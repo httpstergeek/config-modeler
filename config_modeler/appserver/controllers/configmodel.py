@@ -68,7 +68,18 @@ class ConfigModelerController(controllers.BaseController):
         method = cherrypy.request.method
 
         if method == 'GET':
-            return json.dumps(next(os.walk(deploymentapps))[1])
+            applist = next(os.walk(deploymentapps))[1]
+            return json.dumps(applist)
 
         if method == 'POST':
-            return kwargs.get('data')
+            applist = json.loads('["zillow_props_zmq_lyn", "zillow_props_zmq_wfc"]')
+            confsettings = {}
+            for app in applist:
+                apppath = os.path.join(deploymentapps, app)
+                appdefaultpath = os.path.join(apppath,'default')
+                applocalpath = os.path.join(apppath,'local')
+                if os.path.exists(appdefaultpath):
+                    pass
+                confs = [os.path.join(applocalpath, file) for file in os.listdir(applocalpath) if os.path.isfile(os.path.join(applocalpath, file)) and file.endswith('.conf')]
+            # applist = json.loads(kwargs.get('data'))
+            return json.dumps(confs)
