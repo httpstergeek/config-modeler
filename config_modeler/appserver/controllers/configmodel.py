@@ -29,15 +29,12 @@ import cherrypy
 import logging
 import logging.handlers
 import json
-import sys
-import re
 
 # SPLUNK IMPORTS
-import splunk, splunk.util
 import splunk.appserver.mrsparkle.controllers as controllers
 from splunk.appserver.mrsparkle.lib.decorators import expose_page
 from splunk.appserver.mrsparkle.lib.routes import route
-from splunk.appserver.mrsparkle.lib import jsonresponse, util, cached
+from splunk.clilib import cli_common as cli
 
 
 def setup_logger(level):
@@ -60,6 +57,13 @@ def setup_logger(level):
 logger = setup_logger(logging.INFO)
 deploymentapps = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'deployment-apps')
 
+def conflist(dir):
+    filelist = []
+    for filename in os.listdir(dir):
+        if os.path.isfile(os.path.join(dir, filename)) and filename.endswith('.conf') and "app.conf" not in filename:
+            filelist.append(filename)
+    return filelist
+
 
 class ConfigModelerController(controllers.BaseController):
     @expose_page(must_login=False, methods=['GET', 'POST'])
@@ -73,13 +77,31 @@ class ConfigModelerController(controllers.BaseController):
 
         if method == 'POST':
             applist = json.loads('["zillow_props_zmq_lyn", "zillow_props_zmq_wfc"]')
-            confsettings = {}
+            confsettings = []
+
+            # Merges default and local setting for each app
             for app in applist:
                 apppath = os.path.join(deploymentapps, app)
-                appdefaultpath = os.path.join(apppath,'default')
-                applocalpath = os.path.join(apppath,'local')
-                if os.path.exists(appdefaultpath):
-                    pass
-                confs = [os.path.join(applocalpath, file) for file in os.listdir(applocalpath) if os.path.isfile(os.path.join(applocalpath, file)) and file.endswith('.conf')]
-            # applist = json.loads(kwargs.get('data'))
-            return json.dumps(confs)
+                mergedfiles = {}
+                default = 'default'
+                local = 'local'
+                appdefaultpath = os.path.join(apppath, default)
+                applocalpath = os.path.join(apppath, local)
+                defaultconffiles = conflist(appdefaultpath) if os.path.exists(appdefaultpath) else []
+                localconffiles = conflist(applocalpath) if os.path.exists(applocalpath) else []
+                conffiles = list(set(defaultconffiles + localconffiles))
+
+                for conffile in conffiles:
+                    defaultfile = os.path.join(appdefaultpath, conffile)
+                    localfile = os.path.join(applocalpath, conffile)
+                    defaultconf = cli.readConfFile(defaultfile) if os.path.exists(defaultfile) else {}
+                    localconf = cli.readConfFile(localfile) if os.path.exists(localfile) else {}
+                    if localconf:
+                        for stanza, settings in localconf.items():
+                            if stanza in defaultconf:
+                                defaultconf[stanza].update(settings)
+                            else:
+                                defaultconf[stanza] = settings
+                    mergedfiles[conffile] = defaultconf
+                confsettings.append({app: mergedfiles})
+            return json.dumps(confsettings)
