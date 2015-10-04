@@ -42,17 +42,13 @@ def setup_logger(level):
     logger = logging.getLogger(appname)
     logger.propagate = False  # Prevent the log messages from being duplicated in the python.log file
     logger.setLevel(level)
-
     file_handler = logging.handlers.RotatingFileHandler(
         os.path.join(os.environ.get("SPLUNK_HOME"), 'var', 'log', 'splunk', appname + '.log'), maxBytes=25000000,
         backupCount=5)
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
     file_handler.setFormatter(formatter)
-
     logger.addHandler(file_handler)
-
     return logger
-
 
 logger = setup_logger(logging.INFO)
 deploymentapps = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'deployment-apps')
@@ -78,6 +74,8 @@ class ConfigModelerController(controllers.BaseController):
         if method == 'POST':
             applist = json.loads('["zillow_props_zmq_lyn", "zillow_props_zmq_wfc"]')
             confsettings = []
+            mergedconfs = {}
+
 
             # Merges default and local setting for each app
             for app in applist:
@@ -104,4 +102,16 @@ class ConfigModelerController(controllers.BaseController):
                                 defaultconf[stanza] = settings
                     mergedfiles[conffile] = defaultconf
                 confsettings.append({app: mergedfiles})
-            return json.dumps(confsettings)
+
+            for conffile in conffiles:
+                mergedconfs[conffile] = None
+                for app in confsettings:
+                    for appname, conf in app.items():
+                        if conffile in conf:
+                            for stanza, settings in conf[conffile]:
+                                if stanza in mergedconfs[conffile]:
+                                    mergedconfs[conffile][stanza].update(settings)
+                                else:
+                                    mergedconfs[conffile][stanza] = settings
+            return mergedconfs
+            #return json.dumps(confsettings)
