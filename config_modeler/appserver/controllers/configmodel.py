@@ -76,11 +76,11 @@ class ConfigModelerController(controllers.BaseController):
             confsettings = []
             mergedconfs = {}
 
-
-            # Merges default and local setting for each app
+            #  Iterates through each app
             for app in applist:
                 apppath = os.path.join(deploymentapps, app)
                 mergedfiles = {}
+                mergedconfs ={}
                 default = 'default'
                 local = 'local'
                 appdefaultpath = os.path.join(apppath, default)
@@ -89,6 +89,7 @@ class ConfigModelerController(controllers.BaseController):
                 localconffiles = conflist(applocalpath) if os.path.exists(applocalpath) else []
                 conffiles = list(set(defaultconffiles + localconffiles))
 
+                # Merges default and local for app
                 for conffile in conffiles:
                     defaultfile = os.path.join(appdefaultpath, conffile)
                     localfile = os.path.join(applocalpath, conffile)
@@ -103,15 +104,16 @@ class ConfigModelerController(controllers.BaseController):
                     mergedfiles[conffile] = defaultconf
                 confsettings.append({app: mergedfiles})
 
+            # Iterates through each configuration file found in all select apps.
             for conffile in conffiles:
-                mergedconfs[conffile] = None
+                mergedconfs[conffile] = {}
                 for app in confsettings:
                     for appname, conf in app.items():
                         if conffile in conf:
-                            for stanza, settings in conf[conffile]:
+                            for stanza, settings in conf[conffile].items():
                                 if stanza in mergedconfs[conffile]:
                                     mergedconfs[conffile][stanza].update(settings)
                                 else:
                                     mergedconfs[conffile][stanza] = settings
-            return mergedconfs
-            #return json.dumps(confsettings)
+
+            return json.dumps(mergedconfs)
