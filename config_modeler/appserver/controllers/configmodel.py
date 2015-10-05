@@ -69,6 +69,7 @@ class ConfigModelerController(controllers.BaseController):
 
         if method == 'GET':
             applist = next(os.walk(deploymentapps))[1]
+            applist.remove('users')
             return json.dumps(applist)
 
         if method == 'POST':
