@@ -3,7 +3,7 @@
   <row>
     <panel>
       <!-- New in Splunk 6.1 use the multiselect input -->
-	  <input id="multi" type="multiselect" token="sourcetype_token" searchWhenChanged="true">
+	  <input id="multi" type="multiselect" searchWhenChanged="true">
       </input>
     </panel>
   </row>

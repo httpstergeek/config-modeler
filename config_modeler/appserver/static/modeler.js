@@ -75,11 +75,22 @@ require([
     MultiDropdownView,
     SearchManager) {
     (function() {
-      var applist
-      $.get("http://localhost:8000/en-US/custom/config_modeler/configmodel", function(data, status) {
-        appList = JSON.parse(data);
-      })
+      // get multiselect instance
+      var multiSelect = mvc.Components.getInstance("multi");
 
-      console.log(appList);
+      // Populates Mulitselect with App on Deployment server
+      $.get("http://localhost:8000/en-US/custom/config_modeler/configmodel", function(data, status) {
+        var appList = JSON.parse(data);
+        var choices = _.map(appList, function(app){return {label: app, value: app}})
+        multiSelect.settings.set("choices", choices)
+      });
+
+      // on change/ update of multiselect query api for merged config
+      multiSelect.on("change", function(){
+        console.log(this.settings.get("value"));
+        $.post("http://localhost:8000/en-US/custom/config_modeler/configmodel", this.settings.get("value"));
+
+      });
+
     })();
   });
