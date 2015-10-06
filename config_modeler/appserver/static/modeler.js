@@ -87,8 +87,11 @@ require([
 
       // on change/ update of multiselect query api for merged config
       multiSelect.on("change", function(){
-        console.log(this.settings.get("value"));
-        $.post("http://localhost:8000/en-US/custom/config_modeler/configmodel", this.settings.get("value"));
+        var apps = {'data': this.settings.get("value")}
+        console.log(apps);
+        $.post("http://localhost:8000/en-US/custom/config_modeler/configmodel", apps ,function(data){
+          console.log(JSON.parse(data), "hello")
+        });
 
       });
 
