@@ -38,7 +38,8 @@ from splunk.clilib import cli_common as cli
 
 
 def setup_logger(level):
-    appname = os.path.dirname(os.path.realpath(__file__)).split('/')[-2]
+    #appname = os.path.dirname(os.path.realpath(__file__)).split('/')[-2]
+    appname = "config_modeler"
     logger = logging.getLogger(appname)
     logger.propagate = False  # Prevent the log messages from being duplicated in the python.log file
     logger.setLevel(level)
@@ -73,12 +74,26 @@ class ConfigModelerController(controllers.BaseController):
             return json.dumps(applist)
 
         if method == 'POST':
-            applist = json.loads('["zillow_props_zmq_lyn", "zillow_props_zmq_wfc"]')
+            data = cherrypy.request.params
+            if not data:
+                logger.info('no data received')
+                return ''
+            else:
+                data = data['data[]']
+
+            applist = []
             confsettings = []
             mergedconfs = {}
+            logger.info('app config requests: %s' % json.dumps(data))
 
+            if not isinstance(data, list):
+                applist.append(data)
+            else:
+                applist = data
+            logger.info('this app config requests: %s' % json.dumps(applist))
             #  Iterates through each app
             for app in applist:
+                logger.info('retrieving configs for %s' % app)
                 apppath = os.path.join(deploymentapps, app)
                 mergedfiles = {}
                 mergedconfs ={}
