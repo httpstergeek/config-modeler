@@ -17,6 +17,6 @@ path.link {
     stroke-width: 1.5px;
 }
 
-#ctree {
-    height: 900px;
+.svg{
+    min-height: 500px;
 }
