@@ -77,21 +77,20 @@ require([
     MultiDropdownView,
     SearchManager) {
     (function() {
-      function parentChild(name){
-        this.name = name;
-        this.children = []
-      }
+
       var app = DashboardController.model.app.get('app')
       var script = document.createElement("script");
       script.type = "text/javascript";
       script.src = SplunkUtil.make_url('/static/app/'+ app +'/components/d3/d3.js');
       document.getElementsByTagName("head")[0].appendChild(script);
+      var endpoint = $("#ctree").data();
+      var host = "http://" + endpoint.host + ":" + endpoint.port  + "/en-US/custom/"  || "../../"
 
       // get multiselect instance
       var multiSelect = mvc.Components.getInstance("multi");
 
       // Populates Mulitselect with App on Deployment server
-      $.get("http://localhost:8000/en-US/custom/config_modeler/configmodel", function(data, status) {
+      $.get("http://localhost:8000/en-US/custom/" + app + "/configmodel", function(data, status) {
         var appList = JSON.parse(data);
         var choices = _.map(appList, function(app){return {label: app, value: app}});
         multiSelect.settings.set("choices", choices)
@@ -100,7 +99,7 @@ require([
       // on change/ update of multiselect query api for merged config
       multiSelect.on("change", function(){
         var apps = {'data': this.settings.get("value")};
-        $.post("http://localhost:8000/en-US/custom/config_modeler/configmodel", apps ,function(data){
+        $.post(host + app + "/configmodel", apps ,function(data){
           var configs = JSON.parse(data);
           var margin = {top: 10, right: 20, bottom: 30, left: 20};
           var width = 960 - margin.left - margin.right
@@ -110,21 +109,20 @@ require([
           var duration = 400;
           var root;
 
-          var Root = new parentChild('configs');
+          mergedconf = {name: "configs", children: []}
           for (var key in configs) {
-            var F = new parentChild(key);
+            var F = {name: key, children: []}
             for (var stanza in configs[key]) {
-              var S = new parentChild("[" + stanza + "]");
-              var settings = [];
+              var S = {name: "[" + stanza + "]", children: []}
               for (var set in configs[key][stanza]){
-                settings.push({name: set + " = " + configs[key][stanza][set], size: 999});
-                S.children.push(settings);
+                var setting;
+                setting = {name: set + " = " + configs[key][stanza][set], size: Math.round(999 * Math.random())};
+                S.children.push(setting);
               }
               F.children.push(S);
             }
-            Root.children.push(F);
+            mergedconf.children.push(F);
           }
-
           var tree = d3.layout.tree()
             .nodeSize([0, 20]);
 
@@ -135,18 +133,16 @@ require([
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-          configs.x0 = 0;
-          configs.y0 = 0;
-          update(root = Root);
+          mergedconf.x0 = 0;
+          mergedconf.y0 = 0;
+          update(root = mergedconf);
 
           function update(source) {
             // Compute the flattened node list. TODO use d3.layout.hierarchy.
-            var nodes = tree.nodes(source);
-            console.log(source);
-
+            var nodes = tree.nodes(root);
             var height = Math.max(500, nodes.length * barHeight + margin.top + margin.bottom);
 
-            d3.select("svg").transition()
+            d3.select("#ctree svg").transition()
               .duration(duration)
               .attr("height", height);
 
