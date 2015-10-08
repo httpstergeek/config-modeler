@@ -100,7 +100,6 @@ require([
       // on change/ update of multiselect query api for merged config
       multiSelect.on("change", function(){
         var apps = {'data': this.settings.get("value")};
-        console.log(apps);
         $.post("http://localhost:8000/en-US/custom/config_modeler/configmodel", apps ,function(data){
           var configs = JSON.parse(data);
           var margin = {top: 10, right: 20, bottom: 30, left: 20};
@@ -142,8 +141,8 @@ require([
 
           function update(source) {
             // Compute the flattened node list. TODO use d3.layout.hierarchy.
-            var nodes = tree.nodes(root);
-            console.log(nodes)
+            var nodes = tree.nodes(source);
+            console.log(source);
 
             var height = Math.max(500, nodes.length * barHeight + margin.top + margin.bottom);
 
