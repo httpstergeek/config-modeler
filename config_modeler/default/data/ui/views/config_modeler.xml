@@ -1,10 +1,14 @@
-<form script="modeler.js" >
+<form script="modeler.js" stylesheet="modeler.css">
  <label>Configuration Modeler</label>
   <row>
     <panel>
       <!-- New in Splunk 6.1 use the multiselect input -->
 	  <input id="multi" type="multiselect" searchWhenChanged="true">
       </input>
+      <html>
+        <div id="ctree"></div>
+      </html>
     </panel>
+
   </row>
 </form>

@@ -77,6 +77,7 @@ class ConfigModelerController(controllers.BaseController):
             data = cherrypy.request.params
             if not data:
                 logger.info('no data received')
+                logger.info(json.dumps(data))
                 return ''
             else:
                 data = data['data[]']
