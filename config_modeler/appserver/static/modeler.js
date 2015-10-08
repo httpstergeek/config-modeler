@@ -77,12 +77,13 @@ require([
     MultiDropdownView,
     SearchManager) {
     (function() {
-
-      var app = DashboardController.model.app.get('app')
+      // Appends script node to page after load
       var script = document.createElement("script");
       script.type = "text/javascript";
       script.src = SplunkUtil.make_url('/static/app/'+ app +'/components/d3/d3.js');
       document.getElementsByTagName("head")[0].appendChild(script);
+      // getting current app and dashboard settings
+      var app = DashboardController.model.app.get('app')
       var endpoint = $("#ctree").data();
       var host = "http://" + endpoint.host + ":" + endpoint.port  + "/en-US/custom/"  || "../../"
 
@@ -109,6 +110,7 @@ require([
           var duration = 400;
           var root;
 
+          // Formatting of config objects to fit d3 tree
           mergedconf = {name: "configs", children: []}
           for (var key in configs) {
             var F = {name: key, children: []}
