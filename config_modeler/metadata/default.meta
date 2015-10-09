@@ -2,7 +2,7 @@
 # Application-level permissions
 
 []
-access = read : [ * ], write : [ admin, power ]
+access = read : [ admin, power ], write : [ admin, power ]
 
 ### EVENT TYPES
 
@@ -31,5 +31,5 @@ export = system
 ### VIEWSTATES: even normal users should be able to create shared viewstates
 
 [viewstates]
-access = read : [ * ], write : [ * ]
+access = read : [ admin, powser ], write : [ admin ]
 export = system
