@@ -450,5 +450,6 @@ pip-selfcheck.json
 
 # Splunk
 local.meta
+*.spl
 local/
 
