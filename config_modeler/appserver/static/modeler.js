@@ -79,10 +79,11 @@ require([
       // on change/ update of multiselect query api for merged config
       multiSelect.on("change", function(){
         var values = this.settings.get("value");
+        $("#ctree").remove("svg");
         if (values !== "undefined") {
           var apps = {'data': values};
           $.post(host + app + "/configmodel", apps ,function(data){
-            d3.select("svg").remove();
+            d3.select("#tree").remove();
             var configs = JSON.parse(data);
             var margin = {top: 10, right: 20, bottom: 30, left: 20};
             var width = 1500 - margin.left - margin.right
@@ -100,7 +101,8 @@ require([
                 var S = {name: "[" + stanza + "]", children: []}
                 for (var set in configs[key][stanza]){
                   var setting;
-                  setting = {name: set + " = " + configs[key][stanza][set], size: Math.round(999 * Math.random())};
+
+                  setting = {name: configs[key][stanza][set][0] + "  -----  " + set + " = " + configs[key][stanza][set][1], size: Math.round(999 * Math.random())};
                   S.children.push(setting);
                 }
                 F.children.push(S);
@@ -114,6 +116,7 @@ require([
               .projection(function(d) { return [d.y, d.x]; });
             var svg = d3.select("#ctree").append("svg")
               .attr("width", width + margin.left + margin.right)
+              .attr("id", "tree")
               .append("g")
               .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
