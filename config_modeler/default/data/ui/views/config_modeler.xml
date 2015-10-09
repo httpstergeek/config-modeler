@@ -2,7 +2,6 @@
  <label>Configuration Modeler</label>
   <row>
     <panel>
-      <!-- New in Splunk 6.1 use the multiselect input -->
 	  <input id="multi" type="multiselect" searchWhenChanged="true" token="Deployment apps">
       </input>
       <html>
