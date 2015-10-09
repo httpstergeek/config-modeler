@@ -112,8 +112,14 @@ class ConfigModelerController(controllers.BaseController):
                     localfile = os.path.join(applocalpath, conffile)
                     defaultconf = cli.readConfFile(defaultfile) if os.path.exists(defaultfile) else {}
                     localconf = cli.readConfFile(localfile) if os.path.exists(localfile) else {}
+                    if defaultconf:
+                        for stanza, settings in defaultconf.items():
+                            for key, value in settings.items():
+                                defaultconf[stanza][key] = ["%s/%s" % (app, default), value]
                     if localconf:
                         for stanza, settings in localconf.items():
+                            for key, value in settings.items():
+                                settings[key] = ["%s/%s" % (app, local), value]
                             if stanza in defaultconf:
                                 defaultconf[stanza].update(settings)
                             else:
