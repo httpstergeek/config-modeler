@@ -1,12 +1,20 @@
 /**
  * Created by berniem on 10/5/15.
  */
+
+require.config({
+  paths: {
+    "app": "../app"
+  }
+});
+
 require([
     "splunkjs/mvc",
     "splunkjs/mvc/utils",
     "splunkjs/mvc/tokenutils",
     "underscore",
     "jquery",
+    "app/config_modeler/components/d3/d3",
     "splunk.util",
     "splunkjs/mvc/simplexml",
     "splunkjs/mvc/headerview",
@@ -48,6 +56,7 @@ require([
     TokenUtils,
     _,
     $,
+    d3,
     SplunkUtil,
     DashboardController,
     HeaderView,
@@ -77,12 +86,6 @@ require([
     MultiDropdownView,
     SearchManager) {
     (function() {
-      // Appends script node to page after load
-      var script = document.createElement("script");
-      script.type = "text/javascript";
-      script.src = SplunkUtil.make_url('/static/app/'+ app +'/components/d3/d3.js');
-      document.getElementsByTagName("head")[0].appendChild(script);
-      // getting current app and dashboard settings
       var app = DashboardController.model.app.get('app')
       var endpoint = $("#ctree").data();
       var host = "http://" + endpoint.host + ":" + endpoint.port  + "/en-US/custom/"  || "../../"
