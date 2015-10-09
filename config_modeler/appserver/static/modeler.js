@@ -1,5 +1,6 @@
 /**
  * Created by berniem on 10/5/15.
+ * D3 indent tree code taken from http://bl.ocks.org/mbostock/1093025
  */
 
 require.config({
@@ -11,7 +12,6 @@ require.config({
 require([
     "splunkjs/mvc",
     "splunkjs/mvc/utils",
-    "splunkjs/mvc/tokenutils",
     "underscore",
     "jquery",
     "app/config_modeler/components/d3/d3",
@@ -21,31 +21,18 @@ require([
     "splunkjs/mvc/footerview",
     "splunkjs/mvc/simplexml/dashboardview",
     "splunkjs/mvc/simplexml/dashboard/panelref",
-    "splunkjs/mvc/simplexml/element/chart",
-    "splunkjs/mvc/simplexml/element/event",
     "splunkjs/mvc/simplexml/element/html",
     "splunkjs/mvc/simplexml/element/list",
     "splunkjs/mvc/simplexml/element/map",
-    "splunkjs/mvc/simplexml/element/single",
-    "splunkjs/mvc/simplexml/element/table",
     "splunkjs/mvc/simpleform/formutils",
     "splunkjs/mvc/simplexml/eventhandler",
     "splunkjs/mvc/simpleform/input/dropdown",
-    "splunkjs/mvc/simpleform/input/radiogroup",
     "splunkjs/mvc/simpleform/input/multiselect",
-    "splunkjs/mvc/simpleform/input/checkboxgroup",
     "splunkjs/mvc/simpleform/input/text",
-    "splunkjs/mvc/simpleform/input/timerange",
     "splunkjs/mvc/simpleform/input/submit",
-    "splunkjs/mvc/searchbarview",
-    "splunkjs/mvc/tableview",
     "splunkjs/mvc/textinputview",
     "splunkjs/mvc/radiogroupview",
     "splunkjs/mvc/multidropdownview",
-    "splunkjs/mvc/searchmanager",
-    "splunkjs/mvc/savedsearchmanager",
-    "splunkjs/mvc/postprocessmanager",
-    "splunkjs/mvc/simplexml/urltokenmodel"
     // Add comma-separated libraries and modules manually here, for example:
     // ..."splunkjs/mvc/simplexml/urltokenmodel",
     // "splunkjs/mvc/checkboxview"
@@ -53,7 +40,6 @@ require([
   function(
     mvc,
     utils,
-    TokenUtils,
     _,
     $,
     d3,
@@ -63,28 +49,18 @@ require([
     FooterView,
     Dashboard,
     PanelRef,
-    ChartElement,
-    EventElement,
     HtmlElement,
     ListElement,
     MapElement,
-    SingleElement,
-    TableElement,
     FormUtils,
     EventHandler,
     DropdownInput,
-    RadioGroupInput,
     MultiSelectInput,
-    CheckboxGroupInput,
     TextInput,
-    TimeRangeInput,
     SubmitButton,
-    SearchBarView,
-    TableView,
     TextInputView,
     RadioGroupView,
-    MultiDropdownView,
-    SearchManager) {
+    MultiDropdownView) {
     (function() {
       var app = DashboardController.model.app.get('app')
       var endpoint = $("#ctree").data();
@@ -94,7 +70,7 @@ require([
       var multiSelect = mvc.Components.getInstance("multi");
 
       // Populates Mulitselect with App on Deployment server
-      $.get("http://localhost:8000/en-US/custom/" + app + "/configmodel", function(data, status) {
+      $.get(host + app + "/configmodel", function(data, status) {
         var appList = JSON.parse(data);
         var choices = _.map(appList, function(app){return {label: app, value: app}});
         multiSelect.settings.set("choices", choices)
@@ -146,7 +122,7 @@ require([
             update(root = mergedconf);
 
             function update(source) {
-              // Compute the flattened node list. TODO use d3.layout.hierarchy.
+              // Compute the flattened node list.
               var nodes = tree.nodes(root);
               var height = Math.max(500, nodes.length * barHeight + margin.top + margin.bottom);
 
