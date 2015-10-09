@@ -90,7 +90,7 @@ class ConfigModelerController(controllers.BaseController):
             if not isinstance(data, list):
                 applist.append(data)
             else:
-                applist = data
+                applist = data.sort
             logger.info('this app config requests: %s' % json.dumps(applist))
             #  Iterates through each app
             for app in applist:
