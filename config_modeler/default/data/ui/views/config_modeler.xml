@@ -15,6 +15,15 @@
   </search>
   <row>
     <panel>
+      <input type="radio" token="type" searchWhenChanged="true">
+        <label>Select a User:</label>
+        <default>*</default>
+        <choice value="Apps">Apps</choice>
+        <choice value="Serverclass">-</choice>
+        <choice value="admin">Admin</choice>
+        <choice value="nobody">Nobody</choice>
+        <choice value="splunk-system-user">Splunk System User</choice>
+      </input>
 	    <input id="multi" type="multiselect" searchWhenChanged="true" token="Deployment apps">
       </input>
       <html>
