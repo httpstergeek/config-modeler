@@ -1,8 +1,21 @@
 <form script="modeler.js" stylesheet="modeler.css">
  <label>Configuration Modeler</label>
+  <search id="ds_search">
+    | rest splunk_server=[search rest /services/server/info
+      | mvexpand server_roles
+      | where server_roles=="deployment_server"
+      | return $splunk_server] /services/deployment/server/applications
+    | eval serverclasses=if(isnull(serverclasses), "NA", serverclasses)
+    | stats count by serverclasses title
+    | table title serverclasses
+    | appendpipe [mvcombine delim="," title
+    | rename serverclasses as serverclass]
+    | eval serverclass=if(isnotnull(serverclasses), "standalone",serverclass)
+    | fields - serverclasses
+  </search>
   <row>
     <panel>
-	  <input id="multi" type="multiselect" searchWhenChanged="true" token="Deployment apps">
+	    <input id="multi" type="multiselect" searchWhenChanged="true" token="Deployment apps">
       </input>
       <html>
         <div id="ctree" data-host="localhost" data-port="8000"></div>
