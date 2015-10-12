@@ -76,8 +76,12 @@ require([
       var serverClassesList;
       var serverClasses;
 
+      $("#drop").hide();
+      tokens.set("apps","");
+
       // get Splunk form instances
       var multiSelect = mvc.Components.getInstance("multi");
+      var dropDown = mvc.Components.getInstance("drop");
       var radioButton = mvc.Components.getInstance("type");
 
       // Find Deployment server
@@ -137,8 +141,8 @@ require([
           appsData = this.data().rows;
           appList = _.uniq(_.map(appsData, function(app){return app[1]}));
           serverClassesList = _.without(_.uniq(_.map(appsData, function(app){return app[0]})), "NA");
-          var choices = _.map(appList, function(app){return {label: app, value: app}});
-          multiSelect.settings.set("choices", choices);
+          multiSelect.settings.set("choices", _.map(appList, function(app){return {label: app, value: app}}));
+          dropDown.settings.set("choices", _.map(serverClassesList, function(app){return {label: app, value: app}}))
           serverClasses = _.groupBy(appsData, function(a) { return a[0]});
         });
       });
@@ -163,21 +167,29 @@ require([
 
       // Update multiselect through radio group
       radioButton.on("change",function() {
-        var choices;
         if(this.settings.get("value") === "Apps") {
-          multiSelect.settings.set("label","Deployment apps");
-          choices = appList;
+          $("#multi").show();
+          $("#drop").hide();
         } else {
-          multiSelect.settings.set("label","Server Classes");
-          choices = serverClassesList;
+          $("#multi").hide();
+          $("#drop").show();
         }
-        choices = _.map(choices, function(app){return {label: app, value: app}});
-        multiSelect.settings.set("choices", choices);
+      });
+
+      multiSelect.on("change", function() {
+        tokens.set("apps", this.settings.get("value"));
+      });
+
+      dropDown.on("change", function() {
+        var value = this.settings.get("value");
+        if(value !== "undefined"){
+          tokens.set("apps", _.map(serverClasses[value], function(app) { return app[1]}))
+        }
       });
 
       // on change/ update of multiselect query api for merged config
-      multiSelect.on("change", function(){
-        var values = this.settings.get("value");
+      tokens.on("change:apps", function(){
+        var values = this.get("apps");
         $("#ctree").remove("svg");
         if (values !== "undefined") {
           var apps = {'data': values};
@@ -201,7 +213,8 @@ require([
                 for (var set in configs[key][stanza]){
                   var setting;
 
-                  setting = {name: configs[key][stanza][set][0] + "  -----  " + set + " = " + configs[key][stanza][set][1], size: Math.round(999 * Math.random())};
+                  setting = {name: configs[key][stanza][set][0] + " -----  " + set + " = " + configs[key][stanza][set][1],
+                    size: Math.round(999 * Math.random())};
                   S.children.push(setting);
                 }
                 F.children.push(S);
