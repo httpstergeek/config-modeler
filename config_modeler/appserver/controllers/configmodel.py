@@ -85,13 +85,12 @@ class ConfigModelerController(controllers.BaseController):
             applist = []
             confsettings = []
             mergedconfs = {}
+            logger.info("type %s", type(data))
             logger.info('app config requests: %s' % json.dumps(data))
-
             if not isinstance(data, list):
                 applist.append(data)
             else:
-                applist = data.sort
-            logger.info('this app config requests: %s' % json.dumps(applist))
+                applist = data.sort()
             #  Iterates through each app
             for app in applist:
                 logger.info('retrieving configs for %s' % app)
