@@ -12,6 +12,7 @@ require.config({
 require([
     "splunkjs/mvc",
     "splunkjs/mvc/utils",
+    "splunkjs/mvc/tokenutils",
     "underscore",
     "jquery",
     "app/config_modeler/components/d3/d3",
@@ -41,6 +42,7 @@ require([
   function(
     mvc,
     utils,
+    TokenUtils,
     _,
     $,
     d3,
@@ -67,67 +69,92 @@ require([
       var app = DashboardController.model.app.get('app')
       var endpoint = $("#ctree").data();
       var host = "http://" + endpoint.host + ":" + endpoint.port  + "/en-US/custom/"  || "../../"
-      var x
-      function getData() {
+      var tokens = mvc.Components.get("default");
+      var appsData;
+      var appList;
+      var serverClassesList;
+      var serverClasses;
 
-      }
+      // get Splunk form instances
+      var multiSelect = mvc.Components.getInstance("multi");
+      var radioButton = mvc.Components.getInstance("type");
+
       // Find Deployment server
       var dsServer = new SearchManager({
         id: "dsServer",
-        earliest_time: "-1m",
-        latest_time: "now",
+        autostart: true,
         cache: false,
         search: "|rest /services/server/info | mvexpand server_roles | where server_roles==\"deployment_server\" | return $splunk_server"
       });
+
+      // Returns a list serverclasses and apps
+      var appList = new SearchManager({
+        id: "appList",
+        autostart: false,
+        cache: false,
+        search: mvc.tokenSafe("| rest splunk_server=$dsserver$ /services/deployment/server/applications" +
+        "| eval serverclasses=if(isnull(serverclasses), \"NA\", serverclasses)" +
+        "| stats count by serverclasses title" +
+        "| fields serverclasses title")
+      });
+
+      // Find httpport deployment server is using
+      var httpPort = new SearchManager({
+        id: "httpPort",
+        autostart: false,
+        cache: false,
+        search: mvc.tokenSafe("| rest splunk_server=$dsserver$ /services/properties/web/settings/httpport")
+      });
+
+      // Finds SSL enable/ disabled value
+      var enableSSL = new SearchManager({
+        id: "enableSSL",
+        autostart: false,
+        cache: false,
+        search: mvc.tokenSafe("| rest splunk_server=$dsserver$ /services/properties/web/settings/enableSplunkWebSSL")
+      });
+
+      // Sets $dsserver$ token used by other searches
       dsServer.on("search:done", function() {
         var data = this.data("results");
         data.on("data", function() {
-          var server = this.data().rows[0][0];
-          // get list of server classes and deployment apps
-          var appList = new SearchManager({
-            id: "appList",
-            cache: false,
-            search: "| rest splunk_server=" + server +" /services/deployment/server/applications" +
-            "| eval serverclasses=if(isnull(serverclasses), \"NA\", serverclasses)" +
-            "| stats count by serverclasses title" +
-            "| fields serverclasses title"
-          });
-
-          var httpPort = new SearchManager({
-            id: "httpPort",
-            cache: false,
-            search: "| rest /services/properties/web/settings/httpport"
-          });
-
-          var enableSSL = new SearchManager({
-            id: "enableSSL",
-            cache: false,
-            search: "| rest /services/properties/web/settings/enableSplunkWebSSL"
-          });
-
-          appList.on("search:done", function() {
-            this.data("results").on("data", function() {
-              apps = this.data().rows;
-              console.log(_.groupBy(apps, function(a) { return a[0]}));
-
-            });
-          })
-
+          tokens.set("dsserver", this.data().rows[0][0]);
         });
-
       });
 
+      tokens.on("change:dsserver",function() {
+        appList.startSearch();
+        enableSSL.startSearch();
+        httpPort.startSearch();
 
-
-      // get multiselect instance
-      var multiSelect = mvc.Components.getInstance("multi");
-
-      // Populates Mulitselect with App on Deployment server
-      $.get(host + app + "/configmodel", function(data, status) {
-        var appList = JSON.parse(data);
-        var choices = _.map(appList, function(app){return {label: app, value: app}});
-        multiSelect.settings.set("choices", choices)
+        // Gets App and Serverclasses
+        appList.on("search:done", function() {
+          this.data("results").on("data", function() {
+            // Prepares data for Multiselect
+            appsData = this.data().rows;
+            appList = _.uniq(_.map(appsData, function(app){return app[1]}));
+            serverClassesList = _.without(_.uniq(_.map(appsData, function(app){return app[0]})), "NA");
+            var choices = _.map(appList, function(app){return {label: app, value: app}});
+            multiSelect.settings.set("choices", choices);
+            serverClasses = _.groupBy(appsData, function(a) { return a[0]});
+          });
+        });
       });
+
+      // Update multiselect through radio group
+      radioButton.on("change",function() {
+        var choices;
+        if(this.settings.get("value") === "Apps") {
+          multiSelect.settings.set("label","Deployment apps");
+          choices = appList;
+        } else {
+          multiSelect.settings.set("label","Server Classes");
+          choices = serverClassesList;
+        }
+        choices = _.map(choices, function(app){return {label: app, value: app}});
+        multiSelect.settings.set("choices", choices);
+      });
+
 
       // on change/ update of multiselect query api for merged config
       multiSelect.on("change", function(){
