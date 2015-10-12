@@ -33,6 +33,7 @@ require([
     "splunkjs/mvc/textinputview",
     "splunkjs/mvc/radiogroupview",
     "splunkjs/mvc/multidropdownview",
+    "splunkjs/mvc/searchmanager",
     // Add comma-separated libraries and modules manually here, for example:
     // ..."splunkjs/mvc/simplexml/urltokenmodel",
     // "splunkjs/mvc/checkboxview"
@@ -60,11 +61,63 @@ require([
     SubmitButton,
     TextInputView,
     RadioGroupView,
-    MultiDropdownView) {
+    MultiDropdownView,
+    SearchManager) {
     (function() {
       var app = DashboardController.model.app.get('app')
       var endpoint = $("#ctree").data();
       var host = "http://" + endpoint.host + ":" + endpoint.port  + "/en-US/custom/"  || "../../"
+      var x
+      function getData() {
+
+      }
+      // Find Deployment server
+      var dsServer = new SearchManager({
+        id: "dsServer",
+        earliest_time: "-1m",
+        latest_time: "now",
+        cache: false,
+        search: "|rest /services/server/info | mvexpand server_roles | where server_roles==\"deployment_server\" | return $splunk_server"
+      });
+      dsServer.on("search:done", function() {
+        var data = this.data("results");
+        data.on("data", function() {
+          var server = this.data().rows[0][0];
+          // get list of server classes and deployment apps
+          var appList = new SearchManager({
+            id: "appList",
+            cache: false,
+            search: "| rest splunk_server=" + server +" /services/deployment/server/applications" +
+            "| eval serverclasses=if(isnull(serverclasses), \"NA\", serverclasses)" +
+            "| stats count by serverclasses title" +
+            "| fields serverclasses title"
+          });
+
+          var httpPort = new SearchManager({
+            id: "httpPort",
+            cache: false,
+            search: "| rest /services/properties/web/settings/httpport"
+          });
+
+          var enableSSL = new SearchManager({
+            id: "enableSSL",
+            cache: false,
+            search: "| rest /services/properties/web/settings/enableSplunkWebSSL"
+          });
+
+          appList.on("search:done", function() {
+            this.data("results").on("data", function() {
+              apps = this.data().rows;
+              console.log(_.groupBy(apps, function(a) { return a[0]}));
+
+            });
+          })
+
+        });
+
+      });
+
+
 
       // get multiselect instance
       var multiSelect = mvc.Components.getInstance("multi");
