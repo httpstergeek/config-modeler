@@ -1,28 +1,12 @@
 <form script="modeler.js" stylesheet="modeler.css">
  <label>Configuration Modeler</label>
-  <search id="ds_search">
-    | rest splunk_server=[search rest /services/server/info
-      | mvexpand server_roles
-      | where server_roles=="deployment_server"
-      | return $splunk_server] /services/deployment/server/applications
-    | eval serverclasses=if(isnull(serverclasses), "NA", serverclasses)
-    | stats count by serverclasses title
-    | table title serverclasses
-    | appendpipe [mvcombine delim="," title
-    | rename serverclasses as serverclass]
-    | eval serverclass=if(isnotnull(serverclasses), "standalone",serverclass)
-    | fields - serverclasses
-  </search>
   <row>
     <panel>
       <input type="radio" token="type" searchWhenChanged="true">
-        <label>Select a User:</label>
-        <default>*</default>
+        <label>Select Modeler Type:</label>
+        <default>Apps</default>
         <choice value="Apps">Apps</choice>
         <choice value="Serverclass">-</choice>
-        <choice value="admin">Admin</choice>
-        <choice value="nobody">Nobody</choice>
-        <choice value="splunk-system-user">Splunk System User</choice>
       </input>
 	    <input id="multi" type="multiselect" searchWhenChanged="true" token="Deployment apps">
       </input>
