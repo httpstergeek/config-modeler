@@ -71,7 +71,8 @@ require([
       var host = "http://" + endpoint.host + ":" + endpoint.port  + "/en-US/custom/"  || "../../"
       var tokens = mvc.Components.get("default");
       var appsData;
-      var appList;
+      var port;
+      var protocol;
       var serverClassesList;
       var serverClasses;
 
@@ -122,23 +123,42 @@ require([
         });
       });
 
+      // When token has changed run searches
       tokens.on("change:dsserver",function() {
         appList.startSearch();
         enableSSL.startSearch();
         httpPort.startSearch();
+      });
 
-        // Gets App and Serverclasses
-        appList.on("search:done", function() {
-          this.data("results").on("data", function() {
-            // Prepares data for Multiselect
-            appsData = this.data().rows;
-            appList = _.uniq(_.map(appsData, function(app){return app[1]}));
-            serverClassesList = _.without(_.uniq(_.map(appsData, function(app){return app[0]})), "NA");
-            var choices = _.map(appList, function(app){return {label: app, value: app}});
-            multiSelect.settings.set("choices", choices);
-            serverClasses = _.groupBy(appsData, function(a) { return a[0]});
-          });
+      // Gets App and Serverclasses
+      appList.on("search:done", function() {
+        this.data("results").on("data", function() {
+          // Prepares data for Multiselect
+          appsData = this.data().rows;
+          appList = _.uniq(_.map(appsData, function(app){return app[1]}));
+          serverClassesList = _.without(_.uniq(_.map(appsData, function(app){return app[0]})), "NA");
+          var choices = _.map(appList, function(app){return {label: app, value: app}});
+          multiSelect.settings.set("choices", choices);
+          serverClasses = _.groupBy(appsData, function(a) { return a[0]});
         });
+      });
+
+      // Determines webserver protocol of deployment server
+      enableSSL.on("search:done", function() {
+        this.data("results").on("data", function() {
+          if(this.data().rows[0][0] === "false") {
+            protocol = "http://";
+          } else {
+            protocol = "https://";
+          }
+        });
+      });
+
+      // Determines webserver port of deployment server
+      httpPort.on("search:done", function() {
+        this.data("results").on("data", function() {
+          port = this.data().rows[0][0];
+        })
       });
 
       // Update multiselect through radio group
@@ -154,7 +174,6 @@ require([
         choices = _.map(choices, function(app){return {label: app, value: app}});
         multiSelect.settings.set("choices", choices);
       });
-
 
       // on change/ update of multiselect query api for merged config
       multiSelect.on("change", function(){
