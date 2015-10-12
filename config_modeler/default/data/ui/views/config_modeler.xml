@@ -2,11 +2,11 @@
  <label>Configuration Modeler</label>
   <row>
     <panel>
-      <input type="radio" token="type" searchWhenChanged="true">
+      <input id="type" type="radio" token="type" searchWhenChanged="true">
         <label>Select Modeler Type:</label>
         <default>Apps</default>
         <choice value="Apps">Apps</choice>
-        <choice value="Serverclass">-</choice>
+        <choice value="Serverclasses">Serverclasses</choice>
       </input>
 	    <input id="multi" type="multiselect" searchWhenChanged="true" token="Deployment apps">
       </input>
