@@ -35,7 +35,7 @@ import json
 import splunk.appserver.mrsparkle.controllers as controllers
 from splunk.appserver.mrsparkle.lib.decorators import expose_page
 from splunk.appserver.mrsparkle.lib.routes import route
-from splunk.clilib import cli_common as cli
+
 
 def setup_logger(level):
     #appname = os.path.dirname(os.path.realpath(__file__)).split('/')[-2]
@@ -58,5 +58,6 @@ class ConfigModelerController(controllers.BaseController):
     @expose_page(must_login=False, methods=['POST'])
     @route('/', methods=['POST'])
     def rsubmit(self, **kwargs):
-        pass
+        data = cherrypy.request.params
+
 
