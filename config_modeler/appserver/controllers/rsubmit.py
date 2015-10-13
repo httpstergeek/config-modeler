@@ -38,7 +38,7 @@ import splunk.appserver.mrsparkle.controllers as controllers
 from splunk.appserver.mrsparkle.lib.decorators import expose_page
 from splunk.appserver.mrsparkle.lib.routes import route
 
-def request(ur, data=None, timeout=None):
+def request(url, data=None, timeout=None):
     """
     :param url: string, http(s)://
     :param data:
@@ -46,7 +46,7 @@ def request(ur, data=None, timeout=None):
     :return:
     """
     url_encode = urllib.urlencode(data) if data else None
-    connection = urllib2.Request(url, data=url_encode, headers=headers)
+    connection = urllib2.Request(url, data=url_encode)
     response = urllib2.urlopen(connection, timeout=timeout)
     response = dict(code=response.getcode(), msg=response.read(), headers=response.info())
     return response
@@ -67,11 +67,24 @@ def setup_logger(level):
 
 logger = setup_logger(logging.INFO)
 deploymentapps = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'deployment-apps')
+vmodule = os.path.basename(__file__).split(".")[-1].upper().replace('>', '')
 
 class ConfigModelerController(controllers.BaseController):
     @expose_page(must_login=False, methods=['POST'])
     @route('/', methods=['POST'])
     def rsubmit(self, **kwargs):
         data = cherrypy.request.params
+        logger.info("%s %s" % (vmodule, json.dumps(data)))
+        dsserver = data.pop("dsserver")
+        logger.info("%s %s" % (vmodule, dsserver))
+        data["apps[]"] = json.dumps(data["apps[]"])
+        try:
+            response = request(dsserver, data=data)
+            logger.info("%s reponse=%s" % (vmodule, response['code']))
+            return response['msg']
+        except Exception as e:
+            logger.info("%s %s" % (vmodule, e))
+
+
 
 
