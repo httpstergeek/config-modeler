@@ -452,4 +452,5 @@ pip-selfcheck.json
 local.meta
 *.spl
 local/
+*.tgz
 
