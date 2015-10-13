@@ -53,7 +53,6 @@ def request(ur, data=None, timeout=None):
 
 
 def setup_logger(level):
-    #appname = os.path.dirname(os.path.realpath(__file__)).split('/')[-2]
     appname = "config_modeler"
     logger = logging.getLogger(appname)
     logger.propagate = False  # Prevent the log messages from being duplicated in the python.log file
