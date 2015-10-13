@@ -84,13 +84,14 @@ class ConfigModelerController(controllers.BaseController):
 
             applist = []
             confsettings = []
+            conffiles = []
             mergedconfs = {}
             logger.info("type %s", type(data))
             logger.info('app config requests: %s' % json.dumps(data))
             if not isinstance(data, list):
                 applist.append(data)
             else:
-                applist = data.sort()
+                applist = data
             #  Iterates through each app
             for app in applist:
                 logger.info('retrieving configs for %s' % app)
@@ -103,14 +104,20 @@ class ConfigModelerController(controllers.BaseController):
                 applocalpath = os.path.join(apppath, local)
                 defaultconffiles = conflist(appdefaultpath) if os.path.exists(appdefaultpath) else []
                 localconffiles = conflist(applocalpath) if os.path.exists(applocalpath) else []
-                conffiles = list(set(defaultconffiles + localconffiles))
-
+                conffiles = conffiles + defaultconffiles + localconffiles
+                try:
+                    conffiles = list(set(conffiles))
+                except Exception as e:
+                    logger.info("%s" % e )
                 # Merges default and local for app
                 for conffile in conffiles:
+                    logger.info("merging %s" % conffile)
                     defaultfile = os.path.join(appdefaultpath, conffile)
                     localfile = os.path.join(applocalpath, conffile)
                     defaultconf = cli.readConfFile(defaultfile) if os.path.exists(defaultfile) else {}
                     localconf = cli.readConfFile(localfile) if os.path.exists(localfile) else {}
+                    if not (default and local):
+                        continue
                     if defaultconf:
                         for stanza, settings in defaultconf.items():
                             for key, value in settings.items():
