@@ -29,6 +29,8 @@ import os
 import cherrypy
 import logging
 import logging.handlers
+import urllib
+import urllib2
 import json
 
 # SPLUNK IMPORTS
@@ -36,18 +38,13 @@ import splunk.appserver.mrsparkle.controllers as controllers
 from splunk.appserver.mrsparkle.lib.decorators import expose_page
 from splunk.appserver.mrsparkle.lib.routes import route
 
-def request(url, username=None, password=None, headers=None, data=None, proxy=None, timeout=None):
+def request(ur, data=None, timeout=None):
     """
     :param url: string, http(s)://
-    :param username:
-    :param password:
-    :param headers:
     :param data:
-    :param proxy: dict object ProxyHandler
     :param timeout:
     :return:
     """
-
     url_encode = urllib.urlencode(data) if data else None
     connection = urllib2.Request(url, data=url_encode, headers=headers)
     response = urllib2.urlopen(connection, timeout=timeout)
