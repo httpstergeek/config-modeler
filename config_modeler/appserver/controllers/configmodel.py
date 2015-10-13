@@ -53,6 +53,7 @@ def setup_logger(level):
 
 logger = setup_logger(logging.INFO)
 deploymentapps = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'deployment-apps')
+vmodule = os.path.basename(__file__).split(".")[-1].upper().replace('>', '')
 
 def conflist(dir):
     filelist = []
@@ -75,26 +76,27 @@ class ConfigModelerController(controllers.BaseController):
 
         if method == 'POST':
             data = cherrypy.request.params
+            logger.info('%s  %s' % (vmodule, json.dumps(data)))
+            logger.info('%s  %s' % (vmodule, type(data['apps[]'])))
             if not data:
-                logger.info('no data received')
+                logger.info('%s no data received' % vmodule)
                 logger.info(json.dumps(data))
                 return ''
             else:
-                data = data['data[]']
+                data = json.loads(data['apps[]'])
 
             applist = []
             confsettings = []
             conffiles = []
             mergedconfs = {}
-            logger.info("type %s", type(data))
-            logger.info('app config requests: %s' % json.dumps(data))
+            logger.info('%s app config requests: %s' % (vmodule, json.dumps(data)))
             if not isinstance(data, list):
                 applist.append(data)
             else:
                 applist = data
             #  Iterates through each app
             for app in applist:
-                logger.info('retrieving configs for %s' % app)
+                logger.info('%s retrieving configs for %s' % (vmodule, app))
                 apppath = os.path.join(deploymentapps, app)
                 mergedfiles = {}
                 mergedconfs ={}
@@ -111,7 +113,7 @@ class ConfigModelerController(controllers.BaseController):
                     logger.info("%s" % e )
                 # Merges default and local for app
                 for conffile in conffiles:
-                    logger.info("merging %s" % conffile)
+                    logger.info("%s merging %s" % (vmodule, conffile))
                     defaultfile = os.path.join(appdefaultpath, conffile)
                     localfile = os.path.join(applocalpath, conffile)
                     defaultconf = cli.readConfFile(defaultfile) if os.path.exists(defaultfile) else {}
