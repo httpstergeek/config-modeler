@@ -3,6 +3,8 @@ Configuration Modeler - A Graphical display of btool
 
 Configuration Modeler is a Splunk App which mimics btool, but allows users to select apps within the deployment server.  The user can select any combination of apps and graphically see the final configuration.  This tool does not use btool, but instead uses a custom cherrypy endpoint.
 
+This app uses Splunk rest search command to discover the Deployment server.
+
 
 ##Supports:
 
@@ -31,12 +33,11 @@ Installation instructions
 -----------------
 
 ##Stand Alone instance
-1) copy repo into $SPLUNK_HOME/etc/apps/
+1) copy repo into $SPLUNK_HOME/etc/apps/ on deployment server.  This assume deployment server webserver enabled.
 
-2) Open view for config_modeler.xml directly or through Splunk UI. Edit data-host and data-port with dns entry and port used by splunk web.
 
 ##Distributed environment
-1)  copy repo into $SPLUNK_HOME/etc/apps/ to both the deployment server and search heads.
+This requires the use of Distributed Managment Console (DMC).
+1)  copy repo into $SPLUNK_HOME/etc/apps/ to both the deployment server and DMC.
 
-2) Open view for config_modeler.xml directly or through Splunk UI on your search heads. Edit data-host and data-port with dns entry and port used by splunk web.
 
