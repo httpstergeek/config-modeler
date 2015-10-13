@@ -12,6 +12,7 @@ require.config({
 require([
     "splunkjs/mvc",
     "splunkjs/mvc/utils",
+    "splunkjs/mvc/tokenutils",
     "underscore",
     "jquery",
     "app/config_modeler/components/d3/d3",
@@ -33,6 +34,7 @@ require([
     "splunkjs/mvc/textinputview",
     "splunkjs/mvc/radiogroupview",
     "splunkjs/mvc/multidropdownview",
+    "splunkjs/mvc/searchmanager",
     // Add comma-separated libraries and modules manually here, for example:
     // ..."splunkjs/mvc/simplexml/urltokenmodel",
     // "splunkjs/mvc/checkboxview"
@@ -40,6 +42,7 @@ require([
   function(
     mvc,
     utils,
+    TokenUtils,
     _,
     $,
     d3,
@@ -60,29 +63,141 @@ require([
     SubmitButton,
     TextInputView,
     RadioGroupView,
-    MultiDropdownView) {
+    MultiDropdownView,
+    SearchManager) {
     (function() {
       var app = DashboardController.model.app.get('app')
       var endpoint = $("#ctree").data();
       var host = "http://" + endpoint.host + ":" + endpoint.port  + "/en-US/custom/"  || "../../"
+      var tokens = mvc.Components.get("default");
+      var appsData;
+      var serverClassesList;
+      var serverClasses;
 
-      // get multiselect instance
+      $("#drop").hide();
+      tokens.set("apps","");
+      tokens.set("loaded", false)
+
+      // get Splunk form instances
       var multiSelect = mvc.Components.getInstance("multi");
+      var dropDown = mvc.Components.getInstance("drop");
+      var radioButton = mvc.Components.getInstance("type");
 
-      // Populates Mulitselect with App on Deployment server
-      $.get(host + app + "/configmodel", function(data, status) {
-        var appList = JSON.parse(data);
-        var choices = _.map(appList, function(app){return {label: app, value: app}});
-        multiSelect.settings.set("choices", choices)
+      // Find Deployment server
+      var dsServer = new SearchManager({
+        id: "dsServer",
+        autostart: true,
+        cache: false,
+        search: "|rest /services/server/info | mvexpand server_roles | where server_roles==\"deployment_server\" | return $splunk_server"
+      });
+
+      // Returns a list serverclasses and apps
+      var appList = new SearchManager({
+        id: "appList",
+        autostart: false,
+        cache: false,
+        search: mvc.tokenSafe("| rest splunk_server=$dsserver$ /services/deployment/server/applications" +
+        "| eval serverclasses=if(isnull(serverclasses), \"NA\", serverclasses)" +
+        "| stats count by serverclasses title" +
+        "| fields serverclasses title")
+      });
+
+      // Find httpport deployment server is using
+      var httpPort = new SearchManager({
+        id: "httpPort",
+        autostart: false,
+        cache: false,
+        search: mvc.tokenSafe("| rest splunk_server=$dsserver$ /services/properties/web/settings/httpport")
+      });
+
+      // Finds SSL enable/ disabled value
+      var enableSSL = new SearchManager({
+        id: "enableSSL",
+        autostart: false,
+        cache: false,
+        search: mvc.tokenSafe("| rest splunk_server=$dsserver$ /services/properties/web/settings/enableSplunkWebSSL")
+      });
+
+      // Sets $dsserver$ token used by other searches
+      dsServer.on("search:done", function() {
+        var data = this.data("results");
+        data.on("data", function() {
+          tokens.set("dsserver", this.data().rows[0][0]);
+        });
+      });
+
+      // When token has changed run searches
+      tokens.on("change:dsserver",function() {
+        appList.startSearch();
+        enableSSL.startSearch();
+        httpPort.startSearch();
+      });
+
+      // Gets App and Serverclasses
+      appList.on("search:done", function() {
+        this.data("results").on("data", function() {
+          // Prepares data for Multiselect
+          appsData = this.data().rows;
+          appList = _.uniq(_.map(appsData, function(app){return app[1]}));
+          serverClassesList = _.without(_.uniq(_.map(appsData, function(app){return app[0]})), "NA");
+          multiSelect.settings.set("choices", _.map(appList, function(app){return {label: app, value: app}}));
+          dropDown.settings.set("choices", _.map(serverClassesList, function(app){return {label: app, value: app}}))
+          serverClasses = _.groupBy(appsData, function(a) { return a[0]});
+        });
+      });
+
+      // Determines webserver protocol of deployment server
+      enableSSL.on("search:done", function() {
+        this.data("results").on("data", function() {
+          if(this.data().rows[0][0] === "false") {
+            tokens.set("protocol", "http://");
+          } else {
+            tokens.set("protocol", "https://");
+          }
+        });
+      });
+
+      // Determines webserver port of deployment server
+      httpPort.on("search:done", function() {
+        this.data("results").on("data", function() {
+          tokens.set("port", ":" + this.data().rows[0][0]);
+          tokens.set("loaded", true)
+        })
+      });
+
+      // Update multiselect through radio group
+      radioButton.on("change",function() {
+        if(this.settings.get("value") === "Apps") {
+          $("#multi").show();
+          $("#drop").hide();
+        } else {
+          $("#multi").hide();
+          $("#drop").show();
+        }
+      });
+
+      multiSelect.on("change", function() {
+        tokens.set("apps", this.settings.get("value"));
+      });
+
+      dropDown.on("change", function() {
+        var value = this.settings.get("value");
+        if(value !== "undefined"){
+          tokens.set("apps", _.map(serverClasses[value], function(app) { return app[1]}))
+        }
       });
 
       // on change/ update of multiselect query api for merged config
-      multiSelect.on("change", function(){
-        var values = this.settings.get("value");
+      tokens.on("change:apps", function(){
+        var values = this.get("apps");
         $("#ctree").remove("svg");
-        if (values !== "undefined") {
-          var apps = {'data': values};
-          $.post(host + app + "/configmodel", apps ,function(data){
+        tokens.get("loaded")
+        if (tokens.get("loaded")) {
+          var host = this.get("dsserver");
+          var protocol = this.get("protocol");
+          var port = this.get("port");
+          var apps = {'apps': values, 'dsserver': protocol+host+port+"/en-US/custom/" + app + "/configmodel"}
+          $.post("/en-US/custom/" + app + "/rsubmit", apps ,function(data){
             d3.select("#tree").remove();
             var configs = JSON.parse(data);
             var margin = {top: 10, right: 20, bottom: 30, left: 20};
@@ -102,7 +217,8 @@ require([
                 for (var set in configs[key][stanza]){
                   var setting;
 
-                  setting = {name: configs[key][stanza][set][0] + "  -----  " + set + " = " + configs[key][stanza][set][1], size: Math.round(999 * Math.random())};
+                  setting = {name: configs[key][stanza][set][0] + " -----  " + set + " = " + configs[key][stanza][set][1],
+                    size: Math.round(999 * Math.random())};
                   S.children.push(setting);
                 }
                 F.children.push(S);
