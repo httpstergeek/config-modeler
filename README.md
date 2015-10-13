@@ -27,6 +27,8 @@ Prerequisites
 
 * Splunk version 6.x or higher
 
+* Distributed Management Console (only if in distributed Env)
+
 
 
 Installation instructions
