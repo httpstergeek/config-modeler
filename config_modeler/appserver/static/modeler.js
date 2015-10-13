@@ -71,13 +71,12 @@ require([
       var host = "http://" + endpoint.host + ":" + endpoint.port  + "/en-US/custom/"  || "../../"
       var tokens = mvc.Components.get("default");
       var appsData;
-      var port;
-      var protocol;
       var serverClassesList;
       var serverClasses;
 
       $("#drop").hide();
       tokens.set("apps","");
+      tokens.set("loaded", false)
 
       // get Splunk form instances
       var multiSelect = mvc.Components.getInstance("multi");
@@ -151,9 +150,9 @@ require([
       enableSSL.on("search:done", function() {
         this.data("results").on("data", function() {
           if(this.data().rows[0][0] === "false") {
-            protocol = "http://";
+            tokens.set("protocol", "http://");
           } else {
-            protocol = "https://";
+            tokens.set("protocol", "https://");
           }
         });
       });
@@ -161,7 +160,8 @@ require([
       // Determines webserver port of deployment server
       httpPort.on("search:done", function() {
         this.data("results").on("data", function() {
-          port = this.data().rows[0][0];
+          tokens.set("port", ":" + this.data().rows[0][0]);
+          tokens.set("loaded", true)
         })
       });
 
@@ -191,9 +191,13 @@ require([
       tokens.on("change:apps", function(){
         var values = this.get("apps");
         $("#ctree").remove("svg");
-        if (values !== "undefined") {
-          var apps = {'data': values};
-          $.post(host + app + "/configmodel", apps ,function(data){
+        tokens.get("loaded")
+        if (tokens.get("loaded")) {
+          var host = this.get("dsserver");
+          var protocol = this.get("protocol");
+          var port = this.get("port");
+          var apps = {'apps': values, 'dsserver': protocol+host+port+"/en-US/custom/" + app + "/configmodel"}
+          $.post("/en-US/custom/" + app + "/rsubmit", apps ,function(data){
             d3.select("#tree").remove();
             var configs = JSON.parse(data);
             var margin = {top: 10, right: 20, bottom: 30, left: 20};
