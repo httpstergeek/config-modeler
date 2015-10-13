@@ -40,3 +40,8 @@ Installation instructions
 This requires the use of Distributed Managment Console (DMC).
 1)  copy repo into $SPLUNK_HOME/etc/apps/ to both the deployment server and DMC.
 
+
+BUG/ ISSUES REPORT
+------------------
+
+Visit: https://github.com/httpstergeek/config-modeler/issues
