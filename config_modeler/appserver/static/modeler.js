@@ -149,7 +149,7 @@ require([
       // Determines webserver protocol of deployment server
       enableSSL.on("search:done", function() {
         this.data("results").on("data", function() {
-          if(this.data().rows[0][0] === "false") {
+          if(this.data().rows[0][0] === "false" || this.data().rows[0][0] === "0") {
             tokens.set("protocol", "http://");
           } else {
             tokens.set("protocol", "https://");
@@ -182,7 +182,7 @@ require([
 
       dropDown.on("change", function() {
         var value = this.settings.get("value");
-        if(value !== "undefined"){
+        if(typeof(value) !== "undefined" && typeof(serverClasses) !== "undefined"){
           tokens.set("apps", _.map(serverClasses[value], function(app) { return app[1]}))
         }
       });
@@ -191,11 +191,10 @@ require([
       tokens.on("change:apps", function(){
         var values = this.get("apps");
         $("#ctree").remove("svg");
-        tokens.get("loaded")
-        if (tokens.get("loaded")) {
-          var host = this.get("dsserver");
-          var protocol = this.get("protocol");
-          var port = this.get("port");
+        var host = this.get("dsserver");
+        var protocol = this.get("protocol");
+        var port = this.get("port");
+        if ((typeof(host) !== "undefined") && (typeof(protocol) !== "undefined") && (typeof(port) !== "undefined")) {
           var apps = {'apps': values, 'dsserver': protocol+host+port+"/en-US/custom/" + app + "/configmodel"}
           $.post("/en-US/custom/" + app + "/rsubmit", apps ,function(data){
             d3.select("#tree").remove();
