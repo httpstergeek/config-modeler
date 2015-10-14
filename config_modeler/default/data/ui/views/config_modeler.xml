@@ -15,6 +15,14 @@
       </input>
       <html>
         <div id="ctree"></div>
+        <!-- Below are override settings which allow users to define information about the deployment server.
+             data-dsserver is the deployment server name as seen in the DMC
+             data-protocol is https if enableSplunkWebSSL is true as defined in web.conf else http.
+             data-port is the value of httpport as defined in web.conf
+
+             To use override comment out <div id="ctree"></div>
+        -->
+        <!--<div id="ctree" data-dsserver="<DeploymentServerName>" data-protocol="<https|http>" data-port="<webServerPort>"></div>-->
       </html>
     </panel>
   </row>

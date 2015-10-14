@@ -73,14 +73,6 @@ require([
       var serverClasses;
 
       $("#drop").hide();
-      tokens.set("apps","");
-      tokens.set("loaded", false)
-
-      // get Splunk form instances
-      var multiSelect = mvc.Components.getInstance("multi");
-      var dropDown = mvc.Components.getInstance("drop");
-      var radioButton = mvc.Components.getInstance("type");
-
       // Find Deployment server
       var dsServer = new SearchManager({
         id: "dsServer",
@@ -89,21 +81,26 @@ require([
         search: "|rest /services/server/info | mvexpand server_roles | where server_roles==\"deployment_server\" | return $splunk_server"
       });
 
+      // get Splunk form instances
+      var multiSelect = mvc.Components.getInstance("multi");
+      var dropDown = mvc.Components.getInstance("drop");
+      var radioButton = mvc.Components.getInstance("type");
+
       // Returns a list serverclasses and apps
       var appList = new SearchManager({
         id: "appList",
-        autostart: false,
+        autostart: true,
         cache: false,
         search: mvc.tokenSafe("| rest splunk_server=$dsserver$ /services/deployment/server/applications" +
-        "| eval serverclasses=if(isnull(serverclasses), \"NA\", serverclasses)" +
-        "| stats count by serverclasses title" +
-        "| fields serverclasses title")
+          "| eval serverclasses=if(isnull(serverclasses), \"NA\", serverclasses)" +
+          "| stats count by serverclasses title" +
+          "| fields serverclasses title")
       });
 
       // Find httpport deployment server is using
       var httpPort = new SearchManager({
         id: "httpPort",
-        autostart: false,
+        autostart: true,
         cache: false,
         search: mvc.tokenSafe("| rest splunk_server=$dsserver$ /services/properties/web/settings/httpport")
       });
@@ -111,25 +108,27 @@ require([
       // Finds SSL enable/ disabled value
       var enableSSL = new SearchManager({
         id: "enableSSL",
-        autostart: false,
+        autostart: true,
         cache: false,
         search: mvc.tokenSafe("| rest splunk_server=$dsserver$ /services/properties/web/settings/enableSplunkWebSSL")
       });
 
-      // Sets $dsserver$ token used by other searches
-      dsServer.on("search:done", function() {
-        var data = this.data("results");
-        data.on("data", function() {
-          tokens.set("dsserver", this.data().rows[0][0]);
-        });
-      });
+      var overridedata = $("#ctree").data();
 
-      // When token has changed run searches
-      tokens.on("change:dsserver",function() {
-        appList.startSearch();
-        enableSSL.startSearch();
-        httpPort.startSearch();
-      });
+      if(_.isEmpty($("#ctree").data())) {
+
+        // Sets $dsserver$ token used by other searches
+        dsServer.on("search:done", function() {
+          var data = this.data("results");
+          data.on("data", function() {
+            tokens.set("dsserver", this.data().rows[0][0]);
+          });
+        });
+      } else {
+        tokens.set("port", ":" + overridedata.port || "");
+        tokens.set("dsserver", overridedata.dsserver);
+        tokens.set("protocol", overridedata.protocol + "://" || "http://");
+      }
 
       // Gets App and Serverclasses
       appList.on("search:done", function() {
@@ -159,7 +158,6 @@ require([
       httpPort.on("search:done", function() {
         this.data("results").on("data", function() {
           tokens.set("port", ":" + this.data().rows[0][0]);
-          tokens.set("loaded", true)
         })
       });
 
@@ -197,7 +195,10 @@ require([
 
         // Verify tokens for dsserver uri are populated
         if ((typeof(host) !== "undefined") && (typeof(protocol) !== "undefined") && (typeof(port) !== "undefined")) {
-          var apps = {'apps': values, 'dsserver': protocol+host+port+"/en-US/custom/" + app + "/configmodel"}
+          var dsurl = protocol+host+port+"/en-US/custom/" + app + "/configmodel";
+          this.set("dsurl", dsurl);
+          var apps = {'apps': values, 'dsserver': dsurl};
+          console.log(protocol+host+port+"/en-US/custom/" + app + "/configmodel");
           $.post("/en-US/custom/" + app + "/rsubmit", apps ,function(data){
             d3.select("#tree").remove();
             var configs = JSON.parse(data);
