@@ -17,6 +17,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#
+# API used as a proxy to submit request to remote deployment server
+# This is to avoid cross site scripting issues.
+#
+
 __author__ = 'Bernardo Macias '
 __credits__ = ['Bernardo Macias']
 __license__ = "ASF"
