@@ -67,8 +67,6 @@ require([
     SearchManager) {
     (function() {
       var app = DashboardController.model.app.get('app')
-      var endpoint = $("#ctree").data();
-      var host = "http://" + endpoint.host + ":" + endpoint.port  + "/en-US/custom/"  || "../../"
       var tokens = mvc.Components.get("default");
       var appsData;
       var serverClassesList;
@@ -165,7 +163,7 @@ require([
         })
       });
 
-      // Update multiselect through radio group
+      // Update user input from multiselect to dropdown through radio group
       radioButton.on("change",function() {
         if(this.settings.get("value") === "Apps") {
           $("#multi").show();
@@ -176,10 +174,12 @@ require([
         }
       });
 
+      // Sets apps token when user updates input
       multiSelect.on("change", function() {
         tokens.set("apps", this.settings.get("value"));
       });
 
+      // Sets apps token when user updates input
       dropDown.on("change", function() {
         var value = this.settings.get("value");
         if(typeof(value) !== "undefined" && typeof(serverClasses) !== "undefined"){
@@ -194,6 +194,8 @@ require([
         var host = this.get("dsserver");
         var protocol = this.get("protocol");
         var port = this.get("port");
+
+        // Verify tokens for dsserver uri are populated
         if ((typeof(host) !== "undefined") && (typeof(protocol) !== "undefined") && (typeof(port) !== "undefined")) {
           var apps = {'apps': values, 'dsserver': protocol+host+port+"/en-US/custom/" + app + "/configmodel"}
           $.post("/en-US/custom/" + app + "/rsubmit", apps ,function(data){
