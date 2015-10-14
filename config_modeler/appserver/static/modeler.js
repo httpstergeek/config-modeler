@@ -73,14 +73,6 @@ require([
       var serverClasses;
 
       $("#drop").hide();
-      tokens.set("apps","");
-      tokens.set("loaded", false)
-
-      // get Splunk form instances
-      var multiSelect = mvc.Components.getInstance("multi");
-      var dropDown = mvc.Components.getInstance("drop");
-      var radioButton = mvc.Components.getInstance("type");
-
       // Find Deployment server
       var dsServer = new SearchManager({
         id: "dsServer",
@@ -89,15 +81,20 @@ require([
         search: "|rest /services/server/info | mvexpand server_roles | where server_roles==\"deployment_server\" | return $splunk_server"
       });
 
+      // get Splunk form instances
+      var multiSelect = mvc.Components.getInstance("multi");
+      var dropDown = mvc.Components.getInstance("drop");
+      var radioButton = mvc.Components.getInstance("type");
+
       // Returns a list serverclasses and apps
       var appList = new SearchManager({
         id: "appList",
         autostart: false,
         cache: false,
         search: mvc.tokenSafe("| rest splunk_server=$dsserver$ /services/deployment/server/applications" +
-        "| eval serverclasses=if(isnull(serverclasses), \"NA\", serverclasses)" +
-        "| stats count by serverclasses title" +
-        "| fields serverclasses title")
+          "| eval serverclasses=if(isnull(serverclasses), \"NA\", serverclasses)" +
+          "| stats count by serverclasses title" +
+          "| fields serverclasses title")
       });
 
       // Find httpport deployment server is using
@@ -116,19 +113,32 @@ require([
         search: mvc.tokenSafe("| rest splunk_server=$dsserver$ /services/properties/web/settings/enableSplunkWebSSL")
       });
 
-      // Sets $dsserver$ token used by other searches
-      dsServer.on("search:done", function() {
-        var data = this.data("results");
-        data.on("data", function() {
-          tokens.set("dsserver", this.data().rows[0][0]);
+      var overridedata = $("#ctree").data();
+      console.log(overridedata);
+
+      if(_.isEmpty($("#ctree").data())) {
+
+        // Sets $dsserver$ token used by other searches
+        dsServer.on("search:done", function() {
+          var data = this.data("results");
+          data.on("data", function() {
+            tokens.set("dsserver", this.data().rows[0][0]);
+            enableSSL.startSearch();
+            httpPort.startSearch();
+          });
         });
-      });
+      } else {
+        console.log(overridedata.port);
+        tokens.set("port", ":" + overridedata.port);
+        tokens.set("dsserver", overridedata.dsserver);
+        tokens.set("protocol", overridedata.protocol + "://");
+      }
 
       // When token has changed run searches
-      tokens.on("change:dsserver",function() {
-        appList.startSearch();
-        enableSSL.startSearch();
-        httpPort.startSearch();
+      tokens.on("change",function() {
+        if(typeof(this.get("dsserver")) !== "undefined"){
+          appList.startSearch();
+        }
       });
 
       // Gets App and Serverclasses
@@ -159,7 +169,6 @@ require([
       httpPort.on("search:done", function() {
         this.data("results").on("data", function() {
           tokens.set("port", ":" + this.data().rows[0][0]);
-          tokens.set("loaded", true)
         })
       });
 
@@ -197,7 +206,8 @@ require([
 
         // Verify tokens for dsserver uri are populated
         if ((typeof(host) !== "undefined") && (typeof(protocol) !== "undefined") && (typeof(port) !== "undefined")) {
-          var apps = {'apps': values, 'dsserver': protocol+host+port+"/en-US/custom/" + app + "/configmodel"}
+          var apps = {'apps': values, 'dsserver': protocol+host+port+"/en-US/custom/" + app + "/configmodel"};
+          console.log(protocol+host+port+"/en-US/custom/" + app + "/configmodel");
           $.post("/en-US/custom/" + app + "/rsubmit", apps ,function(data){
             d3.select("#tree").remove();
             var configs = JSON.parse(data);

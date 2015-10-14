@@ -14,7 +14,7 @@
         <label>Server Classes</label>
       </input>
       <html>
-        <div id="ctree"></div>
+        <div id="ctree" data-dsserver="berniem1" data-protocol="https" data-port="8660"></div>
       </html>
     </panel>
   </row>

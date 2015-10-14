@@ -77,7 +77,10 @@ class ConfigModelerController(controllers.BaseController):
         logger.info("%s %s" % (vmodule, json.dumps(data)))
         dsserver = data.pop("dsserver")
         logger.info("%s %s" % (vmodule, dsserver))
-        data["apps[]"] = json.dumps(data["apps[]"])
+        if "apps[]" in data:
+            data["apps[]"] = json.dumps(data["apps[]"])
+        if "app" in data:
+            data["apps[]"] = json.dumps(data["apps"])
         try:
             response = request(dsserver, data=data)
             logger.info("%s reponse=%s" % (vmodule, response['code']))
